@@ -18,6 +18,12 @@ dbUser <- "ma_user"
 dbPwd <- "micro"
 
 shinyServer(function(input, output, session) {
+
+  galDataFile <- reactive({
+    read.Genepix(input$galFileInput[1,"datapath"],T)
+  })
+
+
   
   mysession <-reactiveValues()
   mysession$galZoom <- F
@@ -27,9 +33,6 @@ shinyServer(function(input, output, session) {
     read.Genepix(input$gprFileInput[1,"datapath"])
   })
   
-  galDataFile <- reactive({
-    read.Genepix(input$galFileInput[1,"datapath"],T)
-  })
   
   
   output$gprDataTable <- renderDataTable({
@@ -70,50 +73,11 @@ shinyServer(function(input, output, session) {
     return(list(x=c(min(d$x)-max(d$r),max(d$x)+max(d$r)),y=c(max(d$y)+max(d$r),min(d$y)-max(d$r))))
     
   })
+  
+  source("GAL-Fun.R",local=T)
+  
   gprAttrTable <- renderDataTable(gprDataFile()$attr)
   
-  output$galDataTable <- renderDataTable({
-    validate(need(input$galFileInput,"Select a file to preview it"))
-    galDataFile()$data
-  })  
-  
-  output$galBlockTable <- renderDataTable(galDataFile()$blocks)
-  
-  output$galAttrTable <- renderDataTable(galDataFile()$attr)
-  
-  
-  output$galSeqColSelect <- renderUI({
-    validate(need(input$galFileInput,""))
-    selectInput("galSeqColInput","Sequence column",choices = names(galDataFile()$data),selected = "ID")
-  })
-  
-  output$galPlotTab <- renderUI({
-    plotOutput("galPlot",width="auto",height="100%",hoverId = "galPos",clickId = "galClick")
-    
-  })
-  
-  curGalItem <- reactive({
-    getItemForPos(galPlotData(),input$galPos$x,input$galPos$y)
-  })
-  
-  output$galPosOutput <- renderText({
-    d <- curGalItem()
-    paste("Blk: ",d$Block[1]," Col: ",d$Column[1], " Row: ", d$Row[1])
-  })
-  
-  output$galIDOutput <- renderText({
-    d <- getItemForPos(galPlotData(),input$galPos$x,input$galPos$y)
-    paste("ID: ",curGalItem()$ID[1])
-  })
-  
-  output$galNameOutput <- renderText({
-    paste("ID: ",curGalItem()$Name[1])
-  })
-  
-  output$galPlot <- renderPlot({
-    d <- galPlotData()
-    symbols(d$x,d$y,d$r,inches = F,xlim=galPlotLimit()$x,ylim=galPlotLimit()$y,xaxt="n",yaxt="n",xlab="",ylab="",mar=c(0,0,0,0),fg=d$c,asp=1)
-  },height=galPlotHeight,width=galPlotWidth)
   
   output$galDbStatusText <- renderText({
     input$galSubmitButton
